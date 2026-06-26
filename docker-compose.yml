@@ -1,15 +1,15 @@
 services:
   postgres:
-    image: bitnami/postgresql:15
+    image: postgres:15-alpine
     container_name: findafriend-db
     environment:
-      POSTGRESQL_USERNAME: findafriend
-      POSTGRESQL_PASSWORD: findafriend
-      POSTGRESQL_DATABASE: findafriend
+      POSTGRES_USER: findafriend
+      POSTGRES_PASSWORD: findafriend
+      POSTGRES_DB: findafriend
     ports:
       - "5433:5432"
     volumes:
-      - pgdata:/bitnami/postgresql
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U findafriend -d findafriend"]
       interval: 5s
@@ -26,7 +26,6 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-      - /app/.env
     environment:
       DATABASE_URL: "postgresql://findafriend:findafriend@postgres:5432/findafriend?schema=public"
       PORT: 3333
