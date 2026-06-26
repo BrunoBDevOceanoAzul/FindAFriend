@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: findafriend-db
+    environment:
+      POSTGRES_USER: findafriend
+      POSTGRES_PASSWORD: findafriend
+      POSTGRES_DB: findafriend
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U findafriend -d findafriend"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: findafriend-app
+    ports:
+      - "3334:3333"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      DATABASE_URL: "postgresql://findafriend:findafriend@postgres:5432/findafriend?schema=public"
+      PORT: 3333
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint:
+      - sh
+      - -c
+      - |
+        npx prisma generate &&
+        npx prisma db push &&
+        npx prisma db seed &&
+        npm run dev
+
+volumes:
+  pgdata:
