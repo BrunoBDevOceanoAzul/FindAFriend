@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: bitnami/postgresql:15
+    container_name: findafriend-db
+    environment:
+      POSTGRESQL_USERNAME: findafriend
+      POSTGRESQL_PASSWORD: findafriend
+      POSTGRESQL_DATABASE: findafriend
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/bitnami/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U findafriend -d findafriend"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: findafriend-app
+    ports:
+      - "3334:3333"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      DATABASE_URL: "postgresql://findafriend:findafriend@postgres:5432/findafriend?schema=public"
+      PORT: 3333
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint:
+      - sh
+      - -c
+      - |
+        npx prisma generate &&
+        npx prisma migrate deploy &&
+        npx prisma db seed &&
+        npm run dev
+
+volumes:
+  pgdata:
