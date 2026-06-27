@@ -1,167 +1,98 @@
-# FindAFriend API
+# FindAFriend
 
-API REST para adoção de pets construída com Node.js, TypeScript, Fastify, Prisma e PostgreSQL.
+Plataforma para adoção de pets — API REST em Fastify + Prisma (backend) e React + Tailwind v4 (frontend).
 
-## Tecnologias
+## Arquitetura
 
-- **Node.js** + **TypeScript**
-- **Fastify** - Framework web rápido e leve
-- **Prisma** - ORM moderno para PostgreSQL
-- **Zod** - Validação de schemas em runtime
-- **Vitest** - Testes unitários e de integração
+```
+findAFriend/
+├── backend/          → API Fastify + Prisma (porta 3334)
+│   ├── prisma/        → Schema e migrations
+│   ├── src/           → Código-fonte da API
+│   └── uploads/       → Imagens enviadas via upload
+├── frontend/          → React + Vite + Tailwind v4 (porta 5173)
+│   └── src/
+│       ├── pages/     → Home, PetProfile, OrgRegister, OrgLogin, Dashboard
+│       ├── components/→ Header, Footer
+│       ├── services/  → api.ts (Axios instance)
+│       └── lib/       → Tipos compartilhados
+└── docker-compose.yml → PostgreSQL (porta 5433) + app
+```
 
 ## Pré-requisitos
 
-- Node.js 20+
-- PostgreSQL 14+
-- npm ou yarn
+- Node.js 18+
+- Docker + Docker Compose
+- npm
 
-## Setup Inicial
-
-### 1. Instalar dependências
+## Setup
 
 ```bash
+# 1. Instalar dependências
 npm install
-```
+cd frontend && npm install && cd ..
 
-### 2. Configurar variáveis de ambiente
+# 2. Subir banco de dados
+docker compose up -d
 
-Copie o arquivo de exemplo e configure suas credenciais do banco:
+# 3. Aplicar schema Prisma
+npx prisma db push
 
-```bash
-cp .env.example .env
-```
-
-Edite o arquivo `.env` com sua connection string do PostgreSQL:
-
-```env
-DATABASE_URL="postgresql://usuario:senha@localhost:5432/findafriend?schema=public"
-PORT=3333
-NODE_ENV=development
-```
-
-### 3. Gerar Prisma Client
-
-```bash
-npm run prisma:generate
-```
-
-### 4. Rodar Migrations
-
-Para desenvolvimento (cria o banco e aplica migrations):
-
-```bash
-npm run prisma:migrate
-```
-
-Para produção (aplica migrations pendentes):
-
-```bash
-npm run prisma:deploy
-```
-
-### 5. (Opcional) Abrir Prisma Studio
-
-Interface visual para gerenciar dados:
-
-```bash
-npm run prisma:studio
-```
-
-## Scripts Disponíveis
-
-| Script | Descrição |
-|--------|-----------|
-| `npm run dev` | Inicia servidor em modo desenvolvimento com hot reload |
-| `npm run build` | Compila TypeScript para JavaScript na pasta `dist/` |
-| `npm start` | Inicia servidor em produção |
-| `npm test` | Executa testes com Vitest |
-| `npm run test:watch` | Executa testes em modo watch |
-| `npm run test:coverage` | Executa testes com relatório de cobertura |
-| `npm run prisma:generate` | Gera Prisma Client |
-| `npm run prisma:migrate` | Cria e aplica migrations (dev) |
-| `npm run prisma:deploy` | Aplica migrations (produção) |
-| `npm run prisma:studio` | Abre Prisma Studio |
-
-## Estrutura do Projeto
-
-```
-src/
-├── @types/          # Declarações de tipos globais
-├── config/          # Configurações (env, swagger, etc)
-├── modules/         # Módulos da aplicação (orgs, pets)
-│   └── <module>/
-│       ├── dtos/    # Data Transfer Objects (Zod schemas)
-│       ├── repositories/  # Prisma repositories
-│       ├── services/      # Regras de negócio
-│       └── routes.ts      # Rotas Fastify
-├── shared/          # Código compartilhado (erros, helpers)
-├── app.ts           # Configuração do Fastify
-└── server.ts        # Entry point
-```
-
-## Models do Banco
-
-### Org
-- `id` (UUID) - Identificador único
-- `nome` (String) - Nome da organização
-- `email` (String, unique) - Email para login
-- `password_hash` (String) - Hash da senha
-- `cep` (String) - CEP
-- `endereco` (String) - Endereço completo
-- `whatsapp` (String) - Telefone WhatsApp
-- `cidade` (String) - Cidade
-- `created_at` / `updated_at` - Timestamps
-
-### Pet
-- `id` (UUID) - Identificador único
-- `nome` (String) - Nome do pet
-- `descricao` (String?) - Descrição opcional
-- `idade` (String) - Idade (ex: "filhote", "adulto", "idoso")
-- `porte` (String) - Porte (ex: "pequeno", "medio", "grande")
-- `nivel_energia` (String) - Nível de energia (ex: "baixo", "medio", "alto")
-- `ambiente_ideal` (String) - Ambiente ideal (ex: "apartamento", "casa_com_quintal")
-- `org_id` (UUID) - Foreign key para Org
-- `created_at` / `updated_at` - Timestamps
-
-## Desenvolvimento
-
-### Iniciar servidor de desenvolvimento
-
-```bash
+# 4. Iniciar backend (porta 3334)
 npm run dev
+
+# 5. Em outro terminal, iniciar frontend (porta 5173)
+cd frontend && npm run dev
 ```
 
-O servidor estará disponível em `http://localhost:3333`
+Acesse:
+- **Frontend:** http://localhost:5173
+- **API:** http://localhost:3334
+- **Swagger:** http://localhost:3334/docs
 
-Documentação Swagger em `http://localhost:3333/docs`
+## Endpoints da API
+
+### ORGs (organizações)
+
+| Método | Rota           | Autenticação | Descrição                  |
+|--------|----------------|--------------|----------------------------|
+| POST   | `/orgs`        | ❌           | Cadastrar ORG              |
+| POST   | `/sessions`    | ❌           | Login (retorna JWT)       |
+| GET    | `/orgs/:id`    | ❌           | Perfil da ORG              |
+
+### Pets
+
+| Método | Rota              | Autenticação | Descrição                     |
+|--------|-------------------|--------------|-------------------------------|
+| GET    | `/pets`           | ❌           | Listar pets (query: cidade)   |
+| GET    | `/pets/:id`       | ❌           | Detalhes do pet               |
+| POST   | `/pets`           | ✅ JWT       | Cadastrar pet                 |
+| PATCH  | `/pets/:id`       | ✅ JWT       | Atualizar pet                 |
+| DELETE | `/pets/:id`       | ✅ JWT       | Excluir pet                   |
+| POST   | `/pets/:id/images`| ✅ JWT       | Upload de imagens (multipart) |
+
+### Filtros de busca
+
+`GET /pets?cidade=São Paulo&porte=pequeno&idade=filhote&nivel_energia=alto`
 
 ## Testes
 
 ```bash
-# Executar todos os testes
+# Unitários (Vitest)
 npm test
 
-# Executar com coverage
-npm run test:coverage
+# E2E (requer Docker rodando)
+npm run test:e2e
 ```
 
-## Deploy
+## Stack
 
-### Build de produção
-
-```bash
-npm run build
-```
-
-### Iniciar em produção
-
-```bash
-npm start
-```
-
-Certifique-se de rodar as migrations em produção:
-
-```bash
-npm run prisma:deploy
-```
+- **Runtime:** Node.js + TypeScript
+- **API:** Fastify 4.x
+- **ORM:** Prisma
+- **Banco:** PostgreSQL 15
+- **Auth:** JWT (`@fastify/jwt` v8)
+- **Upload:** `@fastify/multipart`
+- **Frontend:** React 19 + Vite + Tailwind v4
+- **Mapa:** Leaflet + OpenStreetMap
+- **Testes:** Vitest

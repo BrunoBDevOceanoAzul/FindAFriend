@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Org {
+  id            String   @id @default(uuid())
+  nome          String
+  email         String   @unique
+  password_hash String
+  cep           String
+  endereco      String
+  whatsapp      String
+  cidade        String
+  latitude      Float?
+  longitude     Float?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  pets          Pet[]
+}
+
+model Pet {
+  id              String   @id @default(uuid())
+  nome            String
+  descricao       String?
+  idade           String
+  porte           String
+  nivel_energia   String
+  ambiente_ideal  String
+  imagens         String[]
+  org_id          String
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  org             Org      @relation(fields: [org_id], references: [id], onDelete: Cascade)
+
+  @@index([org_id])
+}
